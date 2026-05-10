@@ -2,6 +2,13 @@
   "name": "recursosnativos2",
   "version": "1.0.0",
   "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server/server.js",
+    "dev": "./node_modules/nodemon/bin/nodemon.js server/server",
+    "generate-vapid": "./node_modules/web-push/src/cli.js generate-vapid-keys --json > server/vapid.json"
+  },
   "keywords": [
     "PWA"
   ],
@@ -16,10 +23,6 @@
   "license": "ISC",
   "author": "",
   "type": "commonjs",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
   "dependencies": {
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
