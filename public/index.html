@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Taller 19 - PWA Recursos Nativos</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <h1>Taller 19 - Recursos Nativos PWA</h1>
+
+  <!-- Sección FileSystem -->
+  <section id="filesystem">
+    <h2>FileSystem</h2>
+    <button id="btn-open-dir">Abrir directorio</button>
+    <div id="file-tree-container"></div>
+    <div id="file-editor" style="display:none">
+      <textarea id="file-content"></textarea>
+      <button id="btn-save"> Guardar</button>
+    </div>
+  </section>
+
+  <!-- Sección Authentication -->
+  <section id="auth">
+    <h2>Authentication (WebAuthn)</h2>
+    <button id="btn-register">Registrar biométrica</button>
+    <button id="btn-login">Autenticar</button>
+    <p id="auth-status"></p>
+  </section>
+
+  <!-- importa el Web Component de file-tree via CDN/unpkg o local -->
+  <script type="module" src="https://cdn.jsdelivr.net/npm/@dannymoerkerke/file-tree/src/file-tree.js"></script>
+  <script src="/js/main.js" type="module"></script>
+</body>
+</html>
