@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Taller 19 - PWA Recursos Nativos</title>
   <link rel="stylesheet" href="/css/styles.css">
 </head>
+
 <body>
   <h1>Taller 19 - Recursos Nativos PWA</h1>
 
@@ -27,9 +29,27 @@
     <button id="btn-login">Autenticar</button>
     <p id="auth-status"></p>
   </section>
+  <!-- Sección screen-capture -->
+  <section id="screen-capture">
+    <h2>Screen Capture</h2>
+    <button id="btn-start-screen">Iniciar captura</button>
+    <button id="btn-stop-screen" disabled>Detener captura</button>
+    <video id="screen-preview" autoplay playsinline style="width: 100%; max-width: 600px;"></video>
+    <a id="download-screen" style="display:none;" download="screen-record.webm">Descargar video</a>
+  </section>
+
+  <!-- Sección audio-record -->
+  <section id="audio-record">
+    <h2>Audio Recording</h2>
+    <button id="btn-start-audio">Iniciar grabación</button>
+    <button id="btn-stop-audio" disabled>Detener grabación</button>
+    <audio id="audio-preview" controls></audio>
+    <a id="download-audio" style="display:none;" download="audio-record.webm">Descargar audio</a>
+  </section>
 
   <!-- importa el Web Component de file-tree via CDN/unpkg o local -->
-  <script type="module" src="https://cdn.jsdelivr.net/npm/@dannymoerkerke/file-tree/src/file-tree.js"></script>
+  <script type="module" src="https://unpkg.com/@dannymoerkerke/file-tree@latest/dist/file-tree.js"></script>
   <script src="/js/main.js" type="module"></script>
 </body>
+
 </html>
