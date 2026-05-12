@@ -1,80 +1,55 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="es">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PWA Hardware Capabilities</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="/css/styles.css">
-    <link rel="manifest" href="/manifest.json">
-    <meta name="theme-color" content="#0f172a">
-    <link rel="apple-touch-icon" href="/images/icon-192.png">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Taller 19 - PWA Recursos Nativos</title>
+  <link rel="stylesheet" href="/css/styles.css">
 </head>
+
 <body>
-    <div class="app-container">
-        <header>
-            <h1><i class="fa-solid fa-microchip"></i> Hardware APIs</h1>
-            <p>Exploring Native Device Features</p>
-            <button id="permissions-btn" class="hidden"><i class="fa-solid fa-lock-open"></i> Request Sensors Permission</button>
-        </header>
+  <h1>Taller 19 - Recursos Nativos PWA</h1>
 
-        <main class="dashboard">
-            <!-- Camera Section (Face & Barcode) -->
-            <section class="card camera-card">
-                <div class="card-header">
-                    <h2><i class="fa-solid fa-camera"></i> Vision (Shape Detection)</h2>
-                    <div class="toggles">
-                        <label><input type="checkbox" id="face-toggle"> Face</label>
-                        <label><input type="checkbox" id="barcode-toggle"> Barcode</label>
-                    </div>
-                </div>
-                <div class="video-container">
-                    <video id="camera-stream" autoplay playsinline muted></video>
-                    <canvas id="overlay-canvas"></canvas>
-                    <div id="barcode-result" class="hidden"></div>
-                    <div id="unsupported-msg" class="hidden">API Not Supported</div>
-                </div>
-            </section>
-
-            <!-- Device Orientation Section -->
-            <section class="card orientation-card">
-                <div class="card-header">
-                    <h2><i class="fa-regular fa-compass"></i> Orientation</h2>
-                </div>
-                <div class="orientation-display">
-                    <div class="compass-container">
-                        <div class="compass" id="compass-indicator">
-                            <i class="fa-solid fa-arrow-up"></i>
-                        </div>
-                    </div>
-                    <div class="data-grid">
-                        <div class="data-item"><span>Alpha (Z)</span> <strong id="alpha-val">0.00°</strong></div>
-                        <div class="data-item"><span>Beta (X)</span> <strong id="beta-val">0.00°</strong></div>
-                        <div class="data-item"><span>Gamma (Y)</span> <strong id="gamma-val">0.00°</strong></div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Device Motion Section -->
-            <section class="card motion-card">
-                <div class="card-header">
-                    <h2><i class="fa-solid fa-wave-square"></i> Motion</h2>
-                </div>
-                <div class="motion-display">
-                    <div class="accelerometer-visual">
-                        <div class="bubble" id="motion-bubble"></div>
-                    </div>
-                    <div class="data-grid">
-                        <div class="data-item"><span>Acc X</span> <strong id="acc-x">0.00</strong></div>
-                        <div class="data-item"><span>Acc Y</span> <strong id="acc-y">0.00</strong></div>
-                        <div class="data-item"><span>Acc Z</span> <strong id="acc-z">0.00</strong></div>
-                    </div>
-                </div>
-            </section>
-        </main>
+  <!-- Sección FileSystem -->
+  <section id="filesystem">
+    <h2>FileSystem</h2>
+    <button id="btn-open-dir">Abrir directorio</button>
+    <div id="file-tree-container"></div>
+    <div id="file-editor" style="display:none">
+      <textarea id="file-content"></textarea>
+      <button id="btn-save"> Guardar</button>
     </div>
+  </section>
 
-    <script src="/js/main.js"></script>
+  <!-- Sección Authentication -->
+  <section id="auth">
+    <h2>Authentication (WebAuthn)</h2>
+    <button id="btn-register">Registrar biométrica</button>
+    <button id="btn-login">Autenticar</button>
+    <p id="auth-status"></p>
+  </section>
+  <!-- Sección screen-capture -->
+  <section id="screen-capture">
+    <h2>Screen Capture</h2>
+    <button id="btn-start-screen">Iniciar captura</button>
+    <button id="btn-stop-screen" disabled>Detener captura</button>
+    <video id="screen-preview" autoplay playsinline style="width: 100%; max-width: 600px;"></video>
+    <a id="download-screen" style="display:none;" download="screen-record.webm">Descargar video</a>
+  </section>
+
+  <!-- Sección audio-record -->
+  <section id="audio-record">
+    <h2>Audio Recording</h2>
+    <button id="btn-start-audio">Iniciar grabación</button>
+    <button id="btn-stop-audio" disabled>Detener grabación</button>
+    <audio id="audio-preview" controls></audio>
+    <a id="download-audio" style="display:none;" download="audio-record.webm">Descargar audio</a>
+  </section>
+
+  <!-- importa el Web Component de file-tree via CDN/unpkg o local -->
+  <script type="module" src="https://unpkg.com/@dannymoerkerke/file-tree@latest/dist/file-tree.js"></script>
+  <script src="/js/main.js" type="module"></script>
 </body>
+
 </html>

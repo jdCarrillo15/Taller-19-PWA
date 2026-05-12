@@ -1,239 +1,229 @@
-document.addEventListener('DOMContentLoaded', () => {
-    // --- 1. iOS Permissions for Sensors ---
-    const permissionsBtn = document.getElementById('permissions-btn');
-    
-    // Check if we need to request permissions (iOS 13+)
-    if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-        permissionsBtn.classList.remove('hidden');
-        permissionsBtn.addEventListener('click', async () => {
-            try {
-                let orientationPerm = 'granted';
-                let motionPerm = 'granted';
+let currentFileHandle = null;
 
-                if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-                    orientationPerm = await DeviceOrientationEvent.requestPermission();
-                }
-                if (typeof DeviceMotionEvent !== 'undefined' && typeof DeviceMotionEvent.requestPermission === 'function') {
-                    motionPerm = await DeviceMotionEvent.requestPermission();
-                }
-                
-                if (orientationPerm === 'granted' || motionPerm === 'granted') {
-                    permissionsBtn.classList.add('hidden');
-                    initSensors();
-                } else {
-                    alert(`Permisos denegados (Orientación: ${orientationPerm}, Movimiento: ${motionPerm}).\nAsegúrate de usar HTTPS o verifica la configuración de Safari (Settings > Safari > Motion & Orientation Access).`);
-                }
-            } catch (err) {
-                alert(`Error al solicitar permisos: ${err.message}\n(Asegúrate de acceder mediante HTTPS)`);
-                console.error('Error requesting sensor permissions:', err);
-            }
-        });
-    } else {
-        // Non-iOS 13+ devices, init sensors directly
-        initSensors();
-    }
+document.getElementById("btn-open-dir").addEventListener("click", async () => {
+  try {
+    // Pide permiso para abrir un directorio
+    const dirHandle = await window.showDirectoryPicker();
+    const container = document.getElementById("file-tree-container");
+    container.innerHTML = "";
 
-    // --- 2. Camera & Shape Detection (Face / Barcode) ---
-    const video = document.getElementById('camera-stream');
-    const canvas = document.getElementById('overlay-canvas');
-    const ctx = canvas.getContext('2d');
-    const barcodeResult = document.getElementById('barcode-result');
-    const unsupportedMsg = document.getElementById('unsupported-msg');
-    
-    const faceToggle = document.getElementById('face-toggle');
-    const barcodeToggle = document.getElementById('barcode-toggle');
+    // Usa el Web Component file-tree de DannyMoerkerke
+    const fileTree = document.createElement("file-tree");
+    fileTree.setAttribute("dir", "");
+    container.appendChild(fileTree);
+    fileTree.setDirectory(dirHandle); // método del Web Component
 
-    let faceDetector = null;
-    let barcodeDetector = null;
-    let animationFrameId = null;
+    // Escucha cuando el usuario selecciona un archivo
+    fileTree.addEventListener("file-open", async (e) => {
+      currentFileHandle = e.detail.fileHandle;
+      const file = await currentFileHandle.getFile();
 
-    // Check Support
-    const supportsFaceDetection = 'FaceDetector' in window;
-    const supportsBarcodeDetection = 'BarcodeDetector' in window;
+      if (file.type.startsWith("image/")) {
+        // Mostrar imagen
+        const url = URL.createObjectURL(file);
+        container.innerHTML += `<img src="${url}" style="max-width:100%">`;
+      } else {
+        // Mostrar texto editable
+        const text = await file.text();
+        document.getElementById("file-content").value = text;
+        document.getElementById("file-editor").style.display = "block";
+      }
+    });
+  } catch (err) {
+    if (err.name !== "AbortError") console.error(err);
+  }
+});
 
-    if (supportsFaceDetection) {
-        faceDetector = new FaceDetector({ fastMode: true, maxDetectedFaces: 3 });
-    }
-    if (supportsBarcodeDetection) {
-        // You can specify formats: new BarcodeDetector({ formats: ['qr_code', 'ean_13'] })
-        barcodeDetector = new BarcodeDetector();
-    }
+document.getElementById("btn-save").addEventListener("click", async () => {
+  if (!currentFileHandle) return;
+  const writable = await currentFileHandle.createWritable();
+  await writable.write(document.getElementById("file-content").value);
+  await writable.close();
+  alert("Archivo guardado!");
+});
 
-    if (!supportsFaceDetection && !supportsBarcodeDetection) {
-        unsupportedMsg.classList.remove('hidden');
-        unsupportedMsg.innerHTML = 'Shape Detection API is not supported in this browser. <br><small>Try Chrome with experimental flags enabled.</small>';
-    }
+let credentialId = null;
 
-    // Initialize Camera
-    async function initCamera() {
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({
-                video: { 
-                    facingMode: 'environment',
-                    width: { ideal: 1280 },
-                    height: { ideal: 720 },
-                    advanced: [{ focusMode: "continuous" }]
-                }
-            });
-            video.srcObject = stream;
-            
-            video.addEventListener('loadedmetadata', () => {
-                canvas.width = video.videoWidth;
-                canvas.height = video.videoHeight;
-                processVideoFrame();
-            });
-        } catch (err) {
-            console.error('Error accessing camera:', err);
-            unsupportedMsg.classList.remove('hidden');
-            unsupportedMsg.textContent = 'Camera access denied or unavailable.';
-        }
-    }
+document.getElementById("btn-register").addEventListener("click", async () => {
+  const status = document.getElementById("auth-status");
+  try {
+    const credential = await navigator.credentials.create({
+      publicKey: {
+        challenge: crypto.getRandomValues(new Uint8Array(32)),
+        rp: { name: "Taller PWA - UPTC" },
+        user: {
+          id: crypto.getRandomValues(new Uint8Array(16)),
+          name: "estudiante@uptc.edu.co",
+          displayName: "Estudiante UPTC",
+        },
+        pubKeyCredParams: [
+          { type: "public-key", alg: -7 }, // ES256
+          { type: "public-key", alg: -257 }, // RS256
+        ],
+        authenticatorSelection: {
+          userVerification: "required",
+        },
+        timeout: 60000,
+      },
+    });
 
-    async function processVideoFrame() {
-        // Clear previous drawings
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        
-        // 2a. Face Detection
-        if (supportsFaceDetection && faceToggle.checked) {
-            try {
-                const faces = await faceDetector.detect(video);
-                ctx.lineWidth = 4;
-                ctx.strokeStyle = 'red';
-                faces.forEach(face => {
-                    const { top, left, width, height } = face.boundingBox;
-                    ctx.strokeRect(left, top, width, height);
-                });
-            } catch (err) {
-                console.error('Face detection error:', err);
-            }
-        }
+    // Guardamos el ID para usarlo en el login
+    credentialId = credential.rawId;
+    localStorage.setItem(
+      "credentialId",
+      btoa(String.fromCharCode(...new Uint8Array(credentialId))),
+    );
+    status.textContent = "Biométrica registrada correctamente!";
+    status.style.color = "green";
+  } catch (err) {
+    status.textContent = `Error: ${err.message}`;
+    status.style.color = "red";
+  }
+});
 
-        // 2b. Barcode Detection
-        if (supportsBarcodeDetection && barcodeToggle.checked) {
-            try {
-                const barcodes = await barcodeDetector.detect(video);
-                if (barcodes.length > 0) {
-                    ctx.lineWidth = 4;
-                    ctx.strokeStyle = '#10b981'; // Success Green
-                    barcodes.forEach(barcode => {
-                        const { top, left, width, height } = barcode.boundingBox;
-                        ctx.strokeRect(left, top, width, height);
-                        barcodeResult.textContent = barcode.rawValue;
-                        barcodeResult.classList.remove('hidden');
-                    });
-                } else {
-                    barcodeResult.classList.add('hidden');
-                }
-            } catch (err) {
-                console.error('Barcode detection error:', err);
-            }
-        } else {
-            barcodeResult.classList.add('hidden');
-        }
+document.getElementById("btn-login").addEventListener("click", async () => {
+  const status = document.getElementById("auth-status");
+  const savedId = localStorage.getItem("credentialId");
 
-        animationFrameId = requestAnimationFrame(processVideoFrame);
-    }
+  if (!savedId) {
+    status.textContent = "Primero regístrate!";
+    return;
+  }
 
-    // Start camera only if toggles are used to save battery
-    faceToggle.addEventListener('change', handleCameraState);
-    barcodeToggle.addEventListener('change', handleCameraState);
+  try {
+    const idBytes = Uint8Array.from(atob(savedId), (c) => c.charCodeAt(0));
 
-    let isCameraRunning = false;
-    function handleCameraState() {
-        if ((faceToggle.checked || barcodeToggle.checked) && !isCameraRunning) {
-            isCameraRunning = true;
-            initCamera();
-        } else if (!faceToggle.checked && !barcodeToggle.checked && isCameraRunning) {
-            isCameraRunning = false;
-            cancelAnimationFrame(animationFrameId);
-            const stream = video.srcObject;
-            if (stream) {
-                const tracks = stream.getTracks();
-                tracks.forEach(track => track.stop());
-            }
-            video.srcObject = null;
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-        }
-    }
+    const assertion = await navigator.credentials.get({
+      publicKey: {
+        challenge: crypto.getRandomValues(new Uint8Array(32)),
+        allowCredentials: [
+          {
+            id: idBytes.buffer,
+            type: "public-key",
+          },
+        ],
+        userVerification: "required",
+        timeout: 60000,
+      },
+    });
 
-    // --- 3. Orientation & 4. Motion ---
-    const alphaVal = document.getElementById('alpha-val');
-    const betaVal = document.getElementById('beta-val');
-    const gammaVal = document.getElementById('gamma-val');
-    const compassIndicator = document.getElementById('compass-indicator');
+    status.textContent = "Autenticación exitosa!";
+    status.style.color = "green";
+  } catch (err) {
+    status.textContent = `Falló: ${err.message}`;
+    status.style.color = "red";
+  }
+});
 
-    const accX = document.getElementById('acc-x');
-    const accY = document.getElementById('acc-y');
-    const accZ = document.getElementById('acc-z');
-    const motionBubble = document.getElementById('motion-bubble');
+let screenStream;
+let screenRecorder;
+let screenChunks = [];
 
-    function initSensors() {
-        // Device Orientation
-        window.addEventListener('deviceorientation', (event) => {
-            if (event.alpha === null) return; // No hardware support
-            
-            const alpha = event.alpha.toFixed(1); // Z-axis
-            const beta = event.beta.toFixed(1);   // X-axis
-            const gamma = event.gamma.toFixed(1); // Y-axis
+const btnStartScreen = document.getElementById("btn-start-screen");
+const btnStopScreen = document.getElementById("btn-stop-screen");
+const screenPreview = document.getElementById("screen-preview");
+const downloadScreen = document.getElementById("download-screen");
 
-            // Format with fixed zeros to guarantee consistent length
-            const formatAngle = (val) => (val >= 0 ? '+' : '-') + Math.abs(val).toFixed(1).padStart(5, '0') + '°';
-            alphaVal.textContent = formatAngle(event.alpha);
-            betaVal.textContent = formatAngle(event.beta);
-            gammaVal.textContent = formatAngle(event.gamma);
+btnStartScreen.addEventListener("click", async () => {
+  try {
+    screenStream = await navigator.mediaDevices.getDisplayMedia({
+      video: true,
+      audio: true,
+    });
 
-            // Rotate compass indicator (subtracting from 360 to act like a real compass pointing North)
-            compassIndicator.style.transform = `rotate(${360 - event.alpha}deg)`;
-        });
+    screenPreview.srcObject = screenStream;
 
-        // Device Motion
-        window.addEventListener('devicemotion', (event) => {
-            // Prefer pure acceleration (no gravity) for true "motion" feeling
-            let source = event.acceleration;
-            
-            // Fallback to including gravity if device lacks linear accelerometer
-            if (!source || source.x === null) {
-                source = event.accelerationIncludingGravity;
-            }
-            if (!source || source.x === null) return;
-            
-            const x = source.x || 0;
-            const y = source.y || 0;
-            const z = source.z || 0;
+    screenChunks = [];
+    screenRecorder = new MediaRecorder(screenStream);
 
-            // Format with padding to prevent layout shifts (e.g., +05.23, -15.22)
-            const formatMotion = (val) => (val >= 0 ? '+' : '-') + Math.abs(val).toFixed(2).padStart(5, '0');
-            accX.textContent = formatMotion(x);
-            accY.textContent = formatMotion(y);
-            accZ.textContent = formatMotion(z);
+    screenRecorder.ondataavailable = (e) => {
+      if (e.data.size > 0) screenChunks.push(e.data);
+    };
 
-            // Move bubble based ONLY on pure motion spikes
-            let posX = 50 + (x * 10); // Higher multiplier since pure acceleration values are smaller
-            let posY = 50 - (y * 10); 
+    screenRecorder.onstop = () => {
+      const blob = new Blob(screenChunks, { type: "video/webm" });
+      const url = URL.createObjectURL(blob);
 
-            // Constrain bubble within container
-            posX = Math.max(10, Math.min(posX, 90));
-            posY = Math.max(10, Math.min(posY, 90));
+      downloadScreen.href = url;
+      downloadScreen.style.display = "inline-block";
+      downloadScreen.textContent = "Descargar video grabado";
+    };
 
-            motionBubble.style.left = `${posX}%`;
-            motionBubble.style.top = `${posY}%`;
-            
-            // Visual effect: change bubble scale based on Z-axis movement
-            const scale = 1 + Math.abs(z / 10);
-            motionBubble.style.transform = `translate(-50%, -50%) scale(${scale})`;
-        });
-    }
+    screenRecorder.start();
 
-    // --- 5. PWA Service Worker Registration ---
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/sw.js')
-                .then(registration => {
-                    console.log('SW registered with scope:', registration.scope);
-                })
-                .catch(err => {
-                    console.error('SW registration failed:', err);
-                });
-        });
-    }
+    btnStartScreen.disabled = true;
+    btnStopScreen.disabled = false;
+  } catch (err) {
+    console.error("Error al capturar pantalla:", err);
+    alert("No se pudo capturar pantalla");
+  }
+});
+
+btnStopScreen.addEventListener("click", () => {
+  if (screenRecorder && screenRecorder.state !== "inactive") {
+    screenRecorder.stop();
+  }
+
+  if (screenStream) {
+    screenStream.getTracks().forEach((track) => track.stop());
+  }
+
+  btnStartScreen.disabled = false;
+  btnStopScreen.disabled = true;
+});
+
+let audioStream;
+let audioRecorder;
+let audioChunks = [];
+
+const btnStartAudio = document.getElementById("btn-start-audio");
+const btnStopAudio = document.getElementById("btn-stop-audio");
+const audioPreview = document.getElementById("audio-preview");
+const downloadAudio = document.getElementById("download-audio");
+
+btnStartAudio.addEventListener("click", async () => {
+  try {
+    audioStream = await navigator.mediaDevices.getUserMedia({
+      audio: true,
+    });
+
+    audioChunks = [];
+    audioRecorder = new MediaRecorder(audioStream);
+
+    audioRecorder.ondataavailable = (e) => {
+      if (e.data.size > 0) audioChunks.push(e.data);
+    };
+
+    audioRecorder.onstop = () => {
+      const blob = new Blob(audioChunks, { type: "audio/webm" });
+      const url = URL.createObjectURL(blob);
+
+      audioPreview.src = url;
+
+      downloadAudio.href = url;
+      downloadAudio.style.display = "inline-block";
+      downloadAudio.textContent = "Descargar audio grabado";
+    };
+
+    audioRecorder.start();
+
+    btnStartAudio.disabled = true;
+    btnStopAudio.disabled = false;
+  } catch (err) {
+    console.error("Error al grabar audio:", err);
+    alert("No se pudo acceder al micrófono");
+  }
+});
+
+btnStopAudio.addEventListener("click", () => {
+  if (audioRecorder && audioRecorder.state !== "inactive") {
+    audioRecorder.stop();
+  }
+
+  if (audioStream) {
+    audioStream.getTracks().forEach((track) => track.stop());
+  }
+
+  btnStartAudio.disabled = false;
+  btnStopAudio.disabled = true;
 });
