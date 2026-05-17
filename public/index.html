@@ -5,11 +5,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Taller 19 - PWA Recursos Nativos</title>
+  <!-- Enlace al Manifest para que la PWA sea instalable -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#0f172a">
   <link rel="stylesheet" href="/css/styles.css">
 </head>
 
 <body>
   <h1>Taller 19 - Recursos Nativos PWA</h1>
+
+  <div class="grid-container">
 
   <!-- Sección FileSystem -->
   <section id="filesystem">
@@ -47,8 +52,54 @@
     <a id="download-audio" style="display:none;" download="audio-record.webm">Descargar audio</a>
   </section>
 
-  <!-- importa el Web Component de file-tree via CDN/unpkg o local -->
-  <script type="module" src="https://unpkg.com/@dannymoerkerke/file-tree@latest/dist/file-tree.js"></script>
+  <!-- Sección Face Detection -->
+  <section id="face-detection">
+    <h2>Face Detection</h2>
+    <p style="font-size: 0.8rem; color: #64748b;">Sube una foto para detectar rostros (API Experimental)</p>
+    <input type="file" id="face-input" accept="image/*">
+    <canvas id="face-canvas"></canvas>
+  </section>
+
+  <!-- Sección Barcode Detection -->
+  <section id="barcode-detection">
+    <h2>Barcode Detection</h2>
+    <input type="file" id="barcode-input" accept="image/*">
+    <p id="barcode-result" style="margin-top: 10px; font-weight: bold;">Resultado: Ninguno</p>
+  </section>
+
+  <!-- Sección Orientation -->
+  <section id="orientation">
+    <h2>Orientation</h2>
+    <p>Alpha (z): <span id="ori-alpha">0</span>°</p>
+    <p>Beta (x): <span id="ori-beta">0</span>°</p>
+    <p>Gamma (y): <span id="ori-gamma">0</span>°</p>
+    <div id="ori-box" style="width: 50px; height: 50px; background: #ef4444; margin: 10px auto; transition: transform 0.1s;"></div>
+  </section>
+
+  <!-- Sección Motion -->
+  <section id="motion">
+    <h2>Motion (Aceleración)</h2>
+    <p>Eje X: <span id="mot-x">0</span> m/s²</p>
+    <p>Eje Y: <span id="mot-y">0</span> m/s²</p>
+    <p>Eje Z: <span id="mot-z">0</span> m/s²</p>
+  </section>
+
+  <!-- Sección Multitouch -->
+  <section id="multitouch">
+    <h2>Multitouch</h2>
+    <p>Toca el cuadro gris (Toques activos: <span id="touch-count" style="font-weight: bold;">0</span>)</p>
+    <canvas id="touch-canvas" width="300" height="200" style="background:#cbd5e1; touch-action: none;"></canvas>
+  </section>
+
+  <!-- Sección ViewTransition -->
+  <section id="view-transition">
+    <h2>ViewTransition</h2>
+    <button id="btn-vt">Animar vista nativamente</button>
+    <div id="vt-box" class="vt-box" style="margin-top: 15px;">Caja</div>
+  </section>
+
+  </div> <!-- Fin del grid-container -->
+
   <script src="/js/main.js" type="module"></script>
 </body>
 
